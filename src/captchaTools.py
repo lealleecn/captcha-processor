@@ -2,8 +2,9 @@ import cv2
 import numpy as np
 
 import os
+import shutil
 
-resizeRate = 4
+# resizeRate = 4
 ponit_min_width = 2
 
 def getSpecColorMask(img, hsvRanges) :
@@ -11,21 +12,37 @@ def getSpecColorMask(img, hsvRanges) :
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     # get mask
     mask =  cv2.inRange(hsv, hsvRanges[0][0], hsvRanges[0][1])
+    
+    mask = reCalcMaskSuccess(mask)
+
     if len(hsvRanges) > 1 : 
         for index in range(len(hsvRanges)):
             if index > 0 :
                 maskTemp = cv2.inRange(
                     hsv, hsvRanges[index][0], hsvRanges[index][1])
+                maskTemp = reCalcMaskSuccess(maskTemp)
                 mask = cv2.bitwise_or(mask, maskTemp)
 
+    if _isMaskOverSize(mask, 0.4):
+        # todo create error, stop process
+        pass
     return mask
+
+# 获取到指定颜色的mask后，如果mask中不为0的点数超过总点数的40%，则表示mask失败，将mask全部设为0
+def reCalcMaskSuccess(mask) : 
+    if _isMaskOverSize(mask, 0.4):
+        return np.zeros(mask.shape, dtype=np.uint8)
+    return mask
+
+def _isMaskOverSize(mask, size):
+    return len(np.where(mask)[0]) / (mask.shape[0] * mask.shape[1]) > size
 
 # todo 没用，考虑删除
 def removeNoise(img):
     #定义结构元素
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 1))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
     # 腐蚀
-    erosion = cv2.erode(img,kernel,iterations=1)
+    erosion = cv2.erode(img,kernel,iterations=2)
     dilation = cv2.dilate(erosion, kernel, iterations=1)
     opened_mask = cv2.morphologyEx(dilation, cv2.MORPH_OPEN, kernel)    
     return img
@@ -81,7 +98,7 @@ def getSplitImageScope(binaryImg):
     # X轴投影后的最小值，大于这个值才会算做分隔的一条槽, 需要 >= 0
     CONFIG_MIN_VERTICAL_PONIT_COUNT = 0
     # 一段字符的最小宽度
-    CONFIG_MIN_SCOPE_WIDTH = 3
+    CONFIG_MIN_SCOPE_WIDTH = 5
     splitScope = []
     gap = {}
     for index, item in enumerate(xProjection):
@@ -114,58 +131,60 @@ def splitImg(img, scopes, imageName, path):
 def processImage(imagePath, hsvRanges):
     iamgeName = imagePath[imagePath.rfind('/')+1:].replace('.png','')
     originalImage = cv2.imread(imagePath)
-    resizedImage = cv2.resize(originalImage, (0, 0), fx=resizeRate, fy=resizeRate)
+    # resizedImage = cv2.resize(originalImage, (0, 0), fx=resizeRate, fy=resizeRate)
 
-    cv2.imwrite(image_out_path+iamgeName +
-                '-00-resizedImage.png', resizedImage)
-
-    imageOnlyWithSpecColor = getSpecColorMask(resizedImage, hsvRanges)
-
-    # cv2.imwrite(image_out_path+iamgeName+'-01-imageOnlyWithSpecColor.png', imageOnlyWithSpecColor)
+    imageOnlyWithSpecColor = getSpecColorMask(originalImage, hsvRanges)
 
     # # cvtColor：将彩色图转为灰度图
     # grayImg = cv2.cvtColor(imageOnlyWithSpecColor, cv2.COLOR_RGB2GRAY)
 
     # # # 去燥
     prueImg = removeNoise(imageOnlyWithSpecColor)
-    # cv2.imwrite(image_out_path+iamgeName+'-02-prueImg.png', prueImg)
 
     # 恢复缩放之前的大小
-    normalSizeImage = cv2.resize(
-        prueImg, (0, 0), fx=1/resizeRate, fy=1/resizeRate)
-    # cv2.imwrite(image_out_path+iamgeName+'-03-normalSizeImage.png', normalSizeImage)
+    # normalSizeImage = cv2.resize(
+    #     prueImg, (0, 0), fx=1/resizeRate, fy=1/resizeRate)
 
     # threshold：将图像二值化为黑白图片
-    _ret, binaryImage = cv2.threshold(normalSizeImage, 250, 255, cv2.THRESH_BINARY_INV)
-    # cv2.imwrite(image_out_path+iamgeName+'-04-binaryImage.png', binaryImage)
+    _ret, binaryImage = cv2.threshold(prueImg, 250, 255, cv2.THRESH_BINARY_INV)
 
     removedPointsImg = removeIsolatePoints(binaryImage)
-    cv2.imwrite(image_out_path+iamgeName +
-                '-05-removedPointsImg.png', removedPointsImg)
 
     splitImageScope = getSplitImageScope(removedPointsImg)
 
-    print('splitImageScope', splitImageScope)
+    print('splitImageScope', iamgeName, splitImageScope)
 
     splitImg(removedPointsImg, splitImageScope, iamgeName, image_out_path)
+
+    cv2.imwrite(image_out_path+iamgeName +
+                '-00-originalImage.png', originalImage)
+    # cv2.imwrite(image_out_path+iamgeName+'-01-imageOnlyWithSpecColor.png', imageOnlyWithSpecColor)
+    # cv2.imwrite(image_out_path+iamgeName+'-02-prueImg.png', prueImg)
+    # cv2.imwrite(image_out_path+iamgeName+'-03-normalSizeImage.png', normalSizeImage)
+    # cv2.imwrite(image_out_path+iamgeName+'-04-binaryImage.png', binaryImage)
+    cv2.imwrite(image_out_path+iamgeName + '-05-removedPointsImg.png', removedPointsImg)
 
 
 
 # set red thresh
-# hsvRanges = [[np.array([0,70,50]), np.array([10,255,255])], 
-            #  [np.array([170, 70, 50]), np.array([180, 255, 255])]]
+hsvRanges = [[np.array([0,70,50]), np.array([2,255,255])], 
+             [np.array([170, 70, 50]), np.array([180, 255, 255])]]
 
 # set blue thresh
-hsvRanges = [[np.array([100,43,46]), np.array([124,255,255])]]
+# hsvRanges = [[np.array([100,43,46]), np.array([124,255,255])]]
 
 # processImage('./resources/red/red01.png', lower_color_red, upper_color_red)
 
-
-image_path = '/Users/leallee/Downloads/CaptchaSummary/blue-en-1/'
+image_path = '/Users/leallee/Downloads/[color_Red]-[hasChinese_]-[method_]-[result_]-[resultLength_]-[total_100]/'
 image_out_path = image_path + 'out/'
 
-for root, dirs, files in os.walk(image_path, topdown=False):
+if os.path.isdir(image_out_path):
+    shutil.rmtree(image_out_path)
+os.mkdir(image_out_path)
+
+for root, dirs, files in os.walk(image_path, topdown=True):
     for name in files:
-        if os.path.splitext(name)[1] == '.jpg': 
+        
+        if os.path.splitext(name)[1] == '.png' and os.path.join(root, name).count('out') == 0: 
             print('--- start processing ', os.path.join(root, name))
             processImage(os.path.join(root, name), hsvRanges)
