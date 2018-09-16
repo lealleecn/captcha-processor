@@ -157,8 +157,8 @@ def processImage(imagePath, hsvRanges):
     splitImg(removedPointsImg, splitImageScope, iamgeName, image_out_path)
 
     cv2.imwrite(image_out_path+iamgeName +
-                '-00-originalImage.png', originalImage)
-    # cv2.imwrite(image_out_path+iamgeName+'-01-imageOnlyWithSpecColor.png', imageOnlyWithSpecColor)
+                '-00.png', originalImage)
+    cv2.imwrite(image_out_path+iamgeName+'-01-imageOnlyWithSpecColor.png', imageOnlyWithSpecColor)
     # cv2.imwrite(image_out_path+iamgeName+'-02-prueImg.png', prueImg)
     # cv2.imwrite(image_out_path+iamgeName+'-03-normalSizeImage.png', normalSizeImage)
     # cv2.imwrite(image_out_path+iamgeName+'-04-binaryImage.png', binaryImage)
@@ -167,15 +167,14 @@ def processImage(imagePath, hsvRanges):
 
 
 # set red thresh
-hsvRanges = [[np.array([0,70,50]), np.array([2,255,255])], 
-             [np.array([170, 70, 50]), np.array([180, 255, 255])]]
+# hsvRanges = [[np.array([0,70,50]), np.array([2,255,255])], 
+#              [np.array([170, 70, 50]), np.array([180, 255, 255])]]
+# image_path = '/Users/leallee/Downloads/[color_Red]-[hasChinese_]-[method_]-[result_]-[resultLength_]-[total_100]/'
 
 # set blue thresh
-# hsvRanges = [[np.array([100,43,46]), np.array([124,255,255])]]
+hsvRanges = [[np.array([100,160,46]), np.array([124,255,255])]]
+image_path = '/Users/leallee/Downloads/[color_Blue]-[hasChinese_]-[method_]-[result_]-[resultLength_]-[total_100]/'
 
-# processImage('./resources/red/red01.png', lower_color_red, upper_color_red)
-
-image_path = '/Users/leallee/Downloads/[color_Red]-[hasChinese_]-[method_]-[result_]-[resultLength_]-[total_100]/'
 image_out_path = image_path + 'out/'
 
 if os.path.isdir(image_out_path):
