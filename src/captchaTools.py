@@ -172,8 +172,12 @@ def processImage(imagePath, hsvRanges):
 # image_path = '/Users/leallee/Downloads/[color_Red]-[hasChinese_]-[method_]-[result_]-[resultLength_]-[total_100]/'
 
 # set blue thresh
-hsvRanges = [[np.array([100,160,46]), np.array([124,255,255])]]
-image_path = '/Users/leallee/Downloads/[color_Blue]-[hasChinese_]-[method_]-[result_]-[resultLength_]-[total_100]/'
+# hsvRanges = [[np.array([100,160,46]), np.array([124,255,255])]]
+# image_path = '/Users/leallee/Downloads/[color_Blue]-[hasChinese_]-[method_]-[result_]-[resultLength_]-[total_100]/'
+
+# set yellow
+hsvRanges = [[np.array([26,43,46]), np.array([34,255,255])]]
+image_path = '/Users/leallee/Downloads/[color_Yellow]-[hasChinese_]-[method_]-[result_]-[resultLength_]-[total_100]/'
 
 image_out_path = image_path + 'out/'
 
